@@ -1,0 +1,551 @@
+---
+title: "PCA"
+author: "Kristian Severin"
+date: "12/9/2021"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#loading packages
+pacman::p_load(tidyverse, dplyr, sjmisc, janitor, reshape2, corpcor, GPArotation, psych, polycor, mvtnorm, pastecs, tidyverse, fmsb, ggpubr)
+
+
+```
+
+```{r}
+
+#Loading data
+dfPCA <- read_csv("data_clean.csv")
+```
+
+```{r}
+
+numPCA <- select_if(dfPCA, is.numeric)
+```
+
+
+```{r}
+filtdf <- str_subset(numPCA, colnames(numPCA("_cutoff$", negate = T))
+
+??grep_subset
+
+filtdf <- numPCA[ , grep( "_cutoff$" , names( numPCA ), invert = T ) ]
+
+
+```
+
+
+```{r}
+
+#Removing NA's to make eligible for PCA
+
+has_na(filtdf)
+
+filtdf$pas[is.na(filtdf$pas)]<-mean(filtdf$pas,na.rm=TRUE)
+
+filtdf$whoqol_physical[is.na(filtdf$whoqol_physical)]<-mean(filtdf$whoqol_physical,na.rm=TRUE)
+
+filtdf$whoqol_sum[is.na(filtdf$whoqol_sum)]<-mean(filtdf$whoqol_sum,na.rm=TRUE)
+
+
+```
+
+
+```{r}
+
+
+
+
+filtdf <- filtdf[-c(57), ] 
+
+filtdf <- filtdf[-2,]
+
+
+filtdf <- t(filtdf)
+
+
+pca <- prcomp(filtdf, scale = TRUE)
+
+plot(pca$x[,1], pca$x[,2])
+
+pca.var <- pca$sdev^2
+
+pca.var.per <- round(pca.var/sum(pca.var)*100,1)
+
+barplot(pca.var.per, main = "Scree plot", xlab = "Principal Component", ylab = "Percent Variation")
+
+```
+
+
+```{r}
+
+pca.data <- data.frame(Sample = rownames(pca$x),
+  X=pca$x[,1],
+  Y=pca$x[,2])
+
+head(pca.data)
+
+pca.data
+```
+
+
+```{r}
+
+ggplot(data = pca.data, aes(x=X, y=Y, label = Sample))+
+  geom_jitter()+
+  geom_text()+
+  xlab(paste("PC1 - ", pca.var.per[1], "%", sep = ""))+
+  ylab(paste("PC2 - ", pca.var.per[2], "%", sep = ""))+
+  theme_bw()+
+  ggtitle("PCA Multi-Armed Bandit")
+
+
+```
+
+
+```{r}
+loading_scores <- pca$rotation[,1]
+
+behavior <- abs(loading_scores)
+
+behavior_ranked <- sort(behavior, decreasing = F)
+
+
+
+top_10 <- names(behavior_ranked)
+
+??names
+
+behavior_ranked[1:10]
+
+```
+
+
+
+```{r}
+
+#wrangling - probably won't make sense when environment is cleaned
+
+yo2 <- yo1[,-1]
+rownames(yo2) <- yo1[,1]
+
+```
+
+
+
+
+```{r}
+
+#PCA but on data with subject ID's as rowname
+
+pca2 <- prcomp(yo2, scale = TRUE)
+
+plot(pca2$x[,1], pca2$x[,2])
+
+pca.var2 <- pca2$sdev^2
+
+pca.var.per2 <- round(pca.var2/sum(pca.var2)*100,1)
+
+barplot(pca.var.per2, main = "Scree plot", xlab = "Principal Component", ylab = "Percent Variation")
+
+
+```
+
+
+
+
+
+```{r}
+pca.data2 <- data.frame(Sample = rownames(pca2$x),
+  X=pca2$x[,1],
+  Y=pca2$x[,2])
+
+head(pca.data2)
+
+pca.data2
+```
+
+
+
+```{r}
+
+ggplot(data = pca.data2, aes(x=X, y=Y, label = Sample))+
+  geom_jitter()+
+  geom_text()+
+  xlab(paste("PC1 - ", pca.var.per[1], "%", sep = ""))+
+  ylab(paste("PC2 - ", pca.var.per[2], "%", sep = ""))+
+  theme_bw()+
+  ggtitle("PCA Multi-Armed Bandit")
+
+
+
+```
+
+```{r}
+
+#Looking at loading scores for prinComp1
+loading_scores2 <- pca2$rotation[,1]
+
+#Looking at the absolute values of the loading scores
+behavior2 <- abs(loading_scores2)
+
+#rank the loading scores decreasingly
+behavior_ranked2 <- sort(behavior2, decreasing = T)
+
+#look at 1:x number of features with the largest loading scores
+top_10_2 <- names(behavior_ranked2[1:15])
+
+
+#Looking at loading scores for prinComp2
+loading_scores2.1 <- pca2$rotation[,2]
+
+#Looking at the absolute values of the loading scores
+behavior2.1 <- abs(loading_scores2.1)
+
+#rank the loading scores decreasingly
+behavior_ranked2.1 <- sort(behavior2.1, decreasing = T)
+
+#look at 1:x number of features with the largest loading scores
+top_10_2.2 <- names(behavior_ranked2.1[1:15])
+
+
+
+top_10_2.2
+```
+
+
+```{r}
+#Top 10 features with the largest loading score magnitudes
+pca2$rotation[top_10_2, 1]  #princomp1
+
+pca2$rotation[top_10_2, 2]  #princomp2
+
+pca2$rotation[top_10_2, 3]  #princomp3
+
+
+
+```
+
+
+
+```{r}
+head(yo2)
+```
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+pca1f <- as.data.frame(pca1f)
+
+pca1f = pca1f %>% pivot_longer(., c(score_SH, score_first_LH), names_to = "Horizon") 
+
+
+pca1f <- pca1[ , grep( "_cutoff$" , names( pca1 ), invert = T ) ]
+
+```
+
+
+
+```{r}
+#Removing NA's to make eligible for PCA
+pca1f <- filtdf
+
+pca1f <- as.data.frame(pca1f)
+
+has_na(pca1f)
+
+pca1f <- t(pca1f)
+
+
+
+
+```
+
+
+
+```{r}
+pca1f <- pca1f(as.colnames[80,])
+
+pca1f <- pca1f %>% row_to_names(row_number = 80)
+
+pca1f <- sapply(pca1f, as.numeric)
+
+
+
+pca2 <- prcomp(pca1f, scale = TRUE)
+
+plot(pca$x[,1], pca$x[,2])
+
+pca.var <- pca$sdev^2
+
+pca.var.per <- round(pca.var/sum(pca.var)*100,1)
+
+barplot(pca.var.per, main = "Scree plot", xlab = "Principal Component", ylab = "Percent Variation")
+```
+
+
+
+```{r}
+
+hej <- as.data.frame(numPCA)
+
+hej <- hej[ , grep( "_cutoff$" , names( hej ), invert = T ) ]
+
+hej <- melt(hej, id.vars = c("picked_high_SH", "picked_high_LH", "picked_medium_SH", "picked_medium_LH", "picked_novel_SH", "picked_novel_LH", "picked_low_SH", "picked_low_LH"))
+
+hej <- as.tibble(hej)
+
+hej <- column_to_rownames(hej, "variable", )
+
+rownames(hej) <- make.names(hej$variable, unique = T)
+```
+
+
+
+
+```{r}
+
+#scale
+yo2<- scale(yo2)
+
+
+#Correlation Matrices for factors
+matrix_1 <- cor(yo2)
+matrix_2 <- round(matrix_1, digits = 2)
+
+
+```
+
+
+```{r}
+#Bartlett's test
+cortest.bartlett(matrix_2, 121)
+
+
+```
+
+
+```{r}
+#Scree-plot
+fa.parallel(yo2, fm = "minires", fa = "fa", sim = F)
+```
+
+
+```{r}
+#Running analysis with 6 underlaying factors
+f_a <- fa(r = yo2, nfactors = 7,rotate = "oblimin")
+
+f_a
+
+```
+
+
+
+```{r}
+#Isolating gloading scores and putting them in dataframe
+scores <- as.data.frame(f_a$scores) 
+#adding ID column
+scores$ID <- c(1:121)
+```
+
+
+```{r}
+
+#Making subsets for visualization-purposes
+
+d_MR1 <- subset(scores, select = c(1, 8)) 
+d_MR2 <- subset(scores, select = c(2, 8)) 
+d_MR3 <- subset(scores, select = c(4, 8)) 
+d_MR4 <- subset(scores, select = c(3, 8))
+d_MR5 <- subset(scores, select = c(6, 8))
+d_MR6 <- subset(scores, select = c(5, 8))
+d_MR7 <- subset(scores, select = c(7, 8))
+
+
+
+```
+
+
+```{r}
+
+#Print loadings
+
+print(f_a$loadings, cut = 0.3, order = TRUE)
+
+
+
+```
+
+
+
+```{r}
+
+#Categorizing features
+
+load <- as.data.frame(f_a$loadings[,1:6]) %>% mutate(feature_number = seq(80)) %>%
+mutate(color = ifelse(feature_number >= 57, "Gambling Behavior", 
+               ifelse(feature_number %in% c(56,45,7), "Mental Health",
+               ifelse(feature_number %in% c(47, 35, 25, 23:22, 10:8, 5:2), "Psychological Disorders",
+               ifelse(feature_number %in% c(55:48, 46, 26, 24, 21:16), "Physical Health", 
+               ifelse(feature_number %in% c(44:40,34:27), "Psychotic Behavior", 
+               ifelse(feature_number %in% c(39:36,15:11,6), "Empathy", 
+               ifelse(feature_number == 1, "Age", ""))))))))
+
+```
+
+
+
+```{r}
+
+p1 <- load %>% arrange(MR1) %>% mutate(feature_number = factor(feature_number, levels = feature_number)) %>% 
+         ggplot(., aes(feature_number, MR1, fill = color, colour = color)) +
+         geom_col(width = 0.5) + ylim(-2,2) + ggtitle("Factor 1") + xlab("feature_number") + ylab("MR1") 
+         rotate_x_text() + theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+
+```{r}
+p2 <- load %>% arrange(MR2) %>% mutate(feature_number = factor(feature_number, levels = feature_number)) %>% 
+         ggplot(., aes(feature_number, MR2, fill = color, colour = color)) +
+         geom_col(width = 0.5) + ylim(-2,2) + ggtitle("Factor 2") + xlab("feature_number") + ylab("MR2") 
+         rotate_x_text() + theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+
+
+
+
+
+```{r}
+
+p3 <- load %>% arrange(MR3) %>% mutate(feature_number = factor(feature_number, levels = feature_number)) %>% 
+         ggplot(., aes(feature_number, MR3, fill = color, colour = color)) +
+         geom_col(width = 0.5) + ylim(-2,2) + ggtitle("Factor 3") + xlab("feature_number") + ylab("MR3") 
+         rotate_x_text() + theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+
+
+
+```{r}
+
+p4 <- load %>% arrange(MR4) %>% mutate(feature_number = factor(feature_number, levels = feature_number)) %>% 
+         ggplot(., aes(feature_number, MR4, fill = color, colour = color)) +
+         geom_col(width = 0.5) + ylim(-2,2) + ggtitle("Factor 4") + xlab("feature_number") + ylab("MR4") 
+         rotate_x_text() + theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+
+
+```{r}
+
+p5 <- load %>% arrange(MR5) %>% mutate(feature_number = factor(feature_number, levels = feature_number)) %>% 
+         ggplot(., aes(feature_number, MR5, fill = color, colour = color)) +
+         geom_col(width = 0.5) + ylim(-2,2) + ggtitle("Factor 5") + xlab("feature_number") + ylab("MR5") 
+         rotate_x_text() + theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+```{r}
+
+p6 <- load %>% arrange(MR6) %>% mutate(feature_number = factor(feature_number, levels = feature_number)) %>% 
+         ggplot(., aes(feature_number, MR6, fill = color, colour = color)) +
+         geom_col(width = 0.5) + ylim(-2,2) + ggtitle("Factor 6") + xlab("feature_number") + ylab("MR6") 
+         rotate_x_text() + theme(plot.title = element_text(hjust = 0.5))
+
+
+```
+
+```{r}
+
+grid.arrange(p1, p2)
+
+grid.arrange(p3,p4)
+
+grid.arrange(p5, p6)
+
+```
+
+
+
+
+
+```{r}
+
+d_MR1 <- d_MR1 %>% arrange(MR1) %>% mutate(ID = factor(ID, levels = ID))
+ggplot(d_MR1, aes(ID, MR1, fill = MR1, color = MR1)) +
+geom_col(stat = 'summary', fun.y = mean, width = 0.5) +
+ylim(-5,5) + xlab("Participant ID") + ylab("Health") + rotate_x_text() + theme(legend.position = "none")
+
+```
+
+
+
+
+
+```{r}
+d_MR2 <- d_MR2 %>% arrange(MR2) %>% mutate(ID = factor(ID, levels = ID))
+ggplot(d_MR2, aes(ID, MR2, fill = MR2, color = MR2)) +
+geom_col(stat = 'summary', fun.y = mean, width = 0.5) +
+ylim(-5,5) + xlab("Participant ID") + ylab("Gambling Behavior") + rotate_x_text() + theme(legend.position = "none")
+
+```
+
+```{r}
+d_MR3 <- d_MR3 %>% arrange(MR3) %>% mutate(ID = factor(ID, levels = ID))
+ggplot(d_MR3, aes(ID, MR3, fill = MR3, color = MR3)) +
+geom_col(stat = 'summary', fun.y = mean, width = 0.5) +
+ylim(-5,5) + xlab("Participant ID") + ylab("Sense of Self and Others") + rotate_x_text() + theme(legend.position = "none")
+```
+
+
+
+```{r}
+d_MR4 <- d_MR4 %>% arrange(MR4) %>% mutate(ID = factor(ID, levels = ID))
+ggplot(d_MR4, aes(ID, MR4, fill = MR4, color = MR4)) +
+geom_col(stat = 'summary', fun.y = mean, width = 0.5) +
+ylim(-5,5) + xlab("Participant ID") + ylab("Gambling Behavior and Psychological Disorrders") + rotate_x_text() + theme(legend.position = "none")
+
+```
+
+```{r}
+
+d_MR5 <- d_MR5 %>% arrange(MR5) %>% mutate(ID = factor(ID, levels = ID))
+ggplot(d_MR5, aes(ID, MR5, fill = MR5, color = MR5)) +
+geom_col(stat = 'summary', fun.y = mean, width = 0.5) +
+ylim(-5,5) + xlab("Participant ID") + ylab("Empathy and Physical Health") + rotate_x_text() + theme(legend.position = "none")
+
+
+```
+
+
+
+```{r}
+d_MR6 <- d_MR6 %>% arrange(MR6) %>% mutate(ID = factor(ID, levels = ID))
+ggplot(d_MR6, aes(ID, MR6, fill = MR6, color = MR6)) +
+geom_col(stat = 'summary', fun.y = mean, width = 0.5) +
+ylim(-5,5) + xlab("Participant ID") + ylab("Psychological Disorders and Mental Health") + rotate_x_text() + theme(legend.position = "none")
+
+
+```
+
+
+
